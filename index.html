@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://widget.mixcloud.com">
 
   <!-- Main stylesheet -->
-  <link rel="stylesheet" href="style.css?v=1747438801682">
+  <link rel="stylesheet" href="style.css?v=20250508">
   <!-- Bebas Neue from Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 
@@ -64,21 +64,23 @@
   
 <div class="grid-container">
   <!-- CHAT SECTION -->
- <section class="chat" id="radiocult-chat-container">
-  <h2>Cutters Chat</h2>
-  <iframe
-    title="Cutters Choice Radio Chat"
-    src="https://app.radiocult.fm/embed/chat/cutters-choice-radio?theme=midnight&primaryColor=%235A8785&corners=sharp"
-    width="100%"
-    height="700"
-    frameborder="0"
-    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-    loading="eager">
-  </iframe>
-  <div class="chat-actions">
-    <button class="popout-btn" onclick="openChatPopup()">Pop Out Chat</button>
-  </div>
-</section>
+  <section class="chat">
+    <h2>Cutters Chat</h2>
+   + <iframe
++   title="Cutters Choice Radio Chat"
++   src="https://app.radiocult.fm/embed/chat/cutters-choice-radio?theme=midnight&primaryColor=%235A8785&corners=sharp"
++   width="100%" height="700" frameborder="0"
++   allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
++   seamless>
++ </iframe>
+    <div class="chat-actions">
+      <button class="popout-btn" onclick="openChatPopup()">Pop Out Chat</button>
+    </div>
+    <div class="rc-user-list-container">
+      <h3></h3>
+      <div class="rc-user-list"></div>
+    </div>
+  </section>
 
   <!-- LIVE PLAYER SECTION -->
   <section class="live-player">
@@ -123,18 +125,19 @@
   <a href="#history">History</a>
 </footer>
 
-    <script src="script.js?v=1747438801682" defer></script>
-    <script src="slideshow.js?v=1747438801682" defer></script>
+    <script src="script.js?v=20250508" defer></script>
+    <script src="slideshow.js?v=20250508" defer></script>
 
     <!-- Chat Modal for Mobile -->
-<!-- Chat Modal for Mobile -->
-<div id="chatModal">
-  <div class="modal-content">
-    <button class="close-btn" onclick="closeChatModal()">Close</button>
-    <!-- we will inject a fresh iframe here -->
-  </div>
-</div>
-  <!-- <-- make sure this closing tag is here! -->
-
+    <div id="chatModal" style="display:none;">
+      <div class="modal-content">
+        <button class="close-btn" onclick="closeChatModal()">Close</button>
+        <iframe
+          id="chatModalIframe"
+          title="Cutters Chat Modal"
+          allow="autoplay">
+        </iframe>
+      </div>
+    </div>
   </body>
 </html>
