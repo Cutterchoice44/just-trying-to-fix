@@ -8,13 +8,16 @@ const FALLBACK_ART      = "https://i.imgur.com/qWOfxOS.png";
 const MIXCLOUD_PASSWORD = "cutters44";
 const isMobile          = /Mobi|Android/i.test(navigator.userAgent);
 
-// Chat popup reference and visitorId for ban logic
+// Chat popup reference to preserve session
 let chatPopupWindow;
+// Visitor ID for ban logic
 let visitorId;
 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2) BAN LOGIC (FingerprintJS v3+)
+// Load FingerprintJS in your <head> with:
+// <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js" defer></script>
 // ─────────────────────────────────────────────────────────────────────────────
 function blockChat() {
   document.getElementById('popOutBtn')?.remove();
@@ -39,7 +42,7 @@ async function initBanCheck() {
       body: JSON.stringify({ visitorId })
     });
     const { banned } = await res.json();
-    if (banned) blockChat();
+    if (banned === true) blockChat();
   } catch (err) {
     console.warn('Ban check error:', err);
   }
@@ -58,6 +61,7 @@ async function sendBan() {
     console.error('Error sending ban:', err);
   }
 }
+// expose for console
 window.sendBan = sendBan;
 
 
@@ -116,16 +120,11 @@ async function loadArchives() {
       const iframe = document.createElement('iframe');
       iframe.className = 'mixcloud-iframe';
       iframe.src = `https://www.mixcloud.com/widget/iframe/?hide_cover=1&light=1&feed=${feed}`;
-      iframe.loading = 'lazy';
-      iframe.width = '100%';
-      iframe.height = '120';
-      iframe.frameBorder = '0';
+      iframe.loading = 'lazy'; iframe.width = '100%'; iframe.height = '120'; iframe.frameBorder = '0';
       item.appendChild(iframe);
       if (!isMobile) {
         const remove = document.createElement('a');
-        remove.href = '#';
-        remove.className = 'remove-link';
-        remove.textContent = 'Remove show';
+        remove.href = '#'; remove.className = 'remove-link'; remove.textContent = 'Remove show';
         remove.addEventListener('click', e => { e.preventDefault(); deleteMixcloud(idx); });
         item.appendChild(remove);
       }
@@ -133,8 +132,7 @@ async function loadArchives() {
     });
     shuffleIframesDaily();
     const scriptTag = document.createElement('script');
-    scriptTag.src = 'https://widget.mixcloud.com/widget.js';
-    scriptTag.async = true;
+    scriptTag.src = 'https://widget.mixcloud.com/widget.js'; scriptTag.async = true;
     document.body.appendChild(scriptTag);
   } catch (err) {
     console.error('Archive load error:', err);
@@ -142,16 +140,11 @@ async function loadArchives() {
 }
 
 async function addMixcloud() {
-  const input = document.getElementById('mixcloud-url');
-  if (!input) return;
-  const url = input.value.trim();
-  if (!url) return alert('Please paste a valid Mixcloud URL');
-  const pw = prompt('Enter archive password:');
-  if (pw !== MIXCLOUD_PASSWORD) return alert('Incorrect password');
+  const input = document.getElementById('mixcloud-url'); if (!input) return;
+  const url = input.value.trim(); if (!url) return alert('Please paste a valid Mixcloud URL');
+  const pw = prompt('Enter archive password:'); if (pw !== MIXCLOUD_PASSWORD) return alert('Incorrect password');
   try {
-    const form = new FormData();
-    form.append('url', url);
-    form.append('password', pw);
+    const form = new FormData(); form.append('url', url); form.append('password', pw);
     const res = await fetch('add_archive.php', { method: 'POST', body: form });
     if (!res.ok) throw new Error((await res.json()).error || res.statusText);
     input.value = '';
@@ -162,12 +155,9 @@ async function addMixcloud() {
 }
 
 async function deleteMixcloud(index) {
-  const pw = prompt('Enter archive password:');
-  if (pw !== MIXCLOUD_PASSWORD) return alert('Incorrect password');
+  const pw = prompt('Enter archive password:'); if (pw !== MIXCLOUD_PASSWORD) return alert('Incorrect password');
   try {
-    const form = new FormData();
-    form.append('index', index);
-    form.append('password', pw);
+    const form = new FormData(); form.append('index', index); form.append('password', pw);
     const res = await fetch('delete_archive.php', { method: 'POST', body: form });
     if (!res.ok) throw new Error((await res.json()).error || res.statusText);
     await loadArchives();
@@ -184,8 +174,7 @@ async function fetchLiveNow() {
   try {
     const { result } = await rcFetch(`/station/${STATION_ID}/schedule/live`);
     const { metadata: md = {}, content: ct = {} } = result;
-    document.getElementById('now-dj').textContent =
-      md.artist ? `${md.artist} – ${md.title}` : (ct.title || 'No live show');
+    document.getElementById('now-dj').textContent = md.artist ? `${md.artist} – ${md.title}` : (ct.title || 'No live show');
     document.getElementById('now-art').src = md.artwork_url || FALLBACK_ART;
   } catch (e) {
     console.error('Live fetch error:', e);
@@ -199,140 +188,77 @@ async function fetchWeeklySchedule() {
   if (!container) return;
   container.innerHTML = '<p>Loading this week\'s schedule…</p>';
   try {
-    const now = new Date(),
-          then = new Date(now.getTime() + 7*24*60*60*1000);
-    const { schedules } = await rcFetch(
-      `/station/${STATION_ID}/schedule?startDate=${now.toISOString()}&endDate=${then.toISOString()}`
-    );
-    if (!schedules.length) {
-      container.innerHTML = '<p>No shows scheduled this week.</p>';
-      return;
-    }
+    const now = new Date(), then = new Date(now.getTime() + 7*24*60*60*1000);
+    const { schedules } = await rcFetch(`/station/${STATION_ID}/schedule?startDate=${now.toISOString()}&endDate=${then.toISOString()}`);
+    if (!schedules.length) { container.innerHTML = '<p>No shows scheduled this week.</p>'; return; }
     const byDay = schedules.reduce((acc, ev) => {
-      const day = new Date(ev.startDateUtc)
-        .toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
-      (acc[day] = acc[day]||[]).push(ev);
-      return acc;
+      const day = new Date(ev.startDateUtc).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+      (acc[day] = acc[day]||[]).push(ev); return acc;
     }, {});
     container.innerHTML = '';
-    const fmt = iso =>
-      new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const fmt = iso => new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     Object.entries(byDay).forEach(([day, evs]) => {
-      const h3 = document.createElement('h3');
-      h3.textContent = day;
-      container.appendChild(h3);
-      const ul = document.createElement('ul');
-      ul.style.listStyle = 'none';
-      ul.style.padding   = '0';
+      const h3 = document.createElement('h3'); h3.textContent = day; container.appendChild(h3);
+      const ul = document.createElement('ul'); ul.style.listStyle='none'; ul.style.padding='0';
       evs.forEach(ev => {
-        const li   = document.createElement('li');
-        li.style.marginBottom = '1rem';
-        const wrap = document.createElement('div');
-        wrap.style.display     = 'flex';
-        wrap.style.alignItems  = 'center';
-        wrap.style.gap         = '8px';
-        const t = document.createElement('strong');
-        t.textContent = `${fmt(ev.startDateUtc)}–${fmt(ev.endDateUtc)}`;
-        wrap.appendChild(t);
-        const art = ev.metadata?.artwork?.default || ev.metadata?.artwork?.original;
-        if (art) {
-          const img = document.createElement('img');
-          img.src    = art;
-          img.alt    = `${ev.title} artwork`;
-          img.style.cssText = 'width:30px;height:30px;object-fit:cover;border-radius:3px;';
-          wrap.appendChild(img);
-        }
-        const span = document.createElement('span');
-        span.textContent = ev.title;
-        wrap.appendChild(span);
-        if (!/archive/i.test(ev.title)) {
-          const a = document.createElement('a');
-          a.href   = createGoogleCalLink(ev.title, ev.startDateUtc, ev.endDateUtc);
-          a.target = '_blank';
-          a.innerHTML = '📅';
-          a.style.cssText = 'font-size:1.4rem;text-decoration:none;margin-left:6px;';
-          wrap.appendChild(a);
-        }
-        li.appendChild(wrap);
-        ul.appendChild(li);
-      });
-      container.appendChild(ul);
+        const li = document.createElement('li'); li.style.marginBottom='1rem';
+        const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.alignItems='center'; wrap.style.gap='8px';
+        const t = document.createElement('strong'); t.textContent = `${fmt(ev.startDateUtc)}–${fmt(ev.endDateUtc)}`; wrap.appendChild(t);
+        const art = ev.metadata?.artwork?.default||ev.metadata?.artwork?.original; if(art) { const img=document.createElement('img'); img.src=art; img.alt=`${ev.title} artwork`; img.style.cssText='width:30px;height:30px;object-fit:cover;border-radius:3px;'; wrap.appendChild(img); }
+        const span=document.createElement('span'); span.textContent=ev.title; wrap.appendChild(span);
+        if(!/archive/i.test(ev.title)) { const a=document.createElement('a'); a.href=createGoogleCalLink(ev.title,ev.startDateUtc,ev.endDateUtc); a.target='_blank'; a.innerHTML='📅'; a.style.cssText='font-size:1.4rem;text-decoration:none;margin-left:6px;'; wrap.appendChild(a); }
+        li.appendChild(wrap); ul.appendChild(li);
+      }); container.appendChild(ul);
     });
-  } catch (e) {
-    console.error('Schedule error:', e);
-    container.innerHTML = '<p>Error loading schedule.</p>';
-  }
+  } catch (e) { console.error('Schedule error:', e); container.innerHTML='<p>Error loading schedule.</p>'; }
 }
 
 async function fetchNowPlayingArchive() {
   try {
     const { result } = await rcFetch(`/station/${STATION_ID}/schedule/live`);
     const { metadata: md={}, content: ct={} } = result;
-    const el = document.getElementById('now-archive');
-    let text = 'Now Playing: ';
-    if (md.title) text += md.artist ? `${md.artist} – ${md.title}` : md.title;
-    else if (md.filename) text += md.filename;
-    else if (ct.title) text += ct.title;
-    else if (ct.name) text += ct.name;
-    else text += 'Unknown Show';
-    el.textContent = text;
-  } catch (e) {
-    console.error('Archive-now error:', e);
-    document.getElementById('now-archive').textContent = 'Unable to load archive show';
-  }
+    const el=document.getElementById('now-archive'); let text='Now Playing: ';
+    if(md.title) text+=md.artist?`${md.artist} – ${md.title}`:md.title;
+    else if(md.filename) text+=md.filename;
+    else if(ct.title) text+=ct.title;
+    else if(ct.name) text+=ct.name;
+    else text+='Unknown Show';
+    el.textContent=text;
+  } catch(e) { console.error('Archive-now error:',e); document.getElementById('now-archive').textContent='Unable to load archive show'; }
 }
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6) ADMIN & UI ACTIONS (CHAT POP-OUT) — **UPDATED**
+// 6) ADMIN & UI ACTIONS
 // ─────────────────────────────────────────────────────────────────────────────
-// ─── CHAT POP-OUT HANDLERS ─────────────────────────────────────────────────
-
 function openChatPopup() {
-  const modal     = document.getElementById('chatModal');
-  const container = modal.querySelector('.modal-content');
-
+  const url = `https://app.radiocult.fm/embed/chat/${STATION_ID}?theme=midnight&primaryColor=%235A8785&corners=sharp`;
   if (isMobile) {
-    // remove any old chat iframe
-    container.querySelectorAll('iframe').forEach(el => el.remove());
-
-    // build a fresh chat iframe (with its input bar)
-    const chatIframe = document.createElement('iframe');
-    chatIframe.src     = `https://app.radiocult.fm/embed/chat/${STATION_ID}?theme=midnight&primaryColor=%235A8785&corners=sharp`;
-    chatIframe.allow   = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-    chatIframe.loading = 'eager';
-    // make it flex to fill the modal
-    chatIframe.style.cssText = `
-      flex: 1 1 auto;
-      width: 100% !important;
-      height: auto !important;
-      max-height: 100% !important;
-      border: none !important;
-      border-radius: 4px;
-    `;
-
-    container.appendChild(chatIframe);
-    modal.style.display = 'flex';
+    const modal    = document.getElementById('chatModal'),
+          iframeEl = document.getElementById('chatModalIframe');
+    if (modal && iframeEl) {
+      // always reload on mobile to ensure input shows
+      iframeEl.src = url;
+      modal.style.display = 'flex';
+    }
   } else {
-    // desktop fallback opens a real popup
-    const url = `https://app.radiocult.fm/embed/chat/${STATION_ID}?theme=midnight&primaryColor=%235A8785&corners=sharp`;
     if (chatPopupWindow && !chatPopupWindow.closed) {
       chatPopupWindow.focus();
     } else {
       chatPopupWindow = window.open(
-        url, 'CuttersChatPopup', 'width=400,height=700,resizable=yes,scrollbars=yes'
+        url,
+        'CuttersChatPopup',
+        'width=400,height=700,resizable=yes,scrollbars=yes'
       );
     }
   }
 }
 
 function closeChatModal() {
-  const modal = document.getElementById('chatModal');
-  modal.style.display = 'none';
-  // (optional) clear out the iframe so next open is fresh
-  modal.querySelectorAll('iframe').forEach(el => el.remove());
+  const modal    = document.getElementById('chatModal'),
+        iframeEl = document.getElementById('chatModalIframe');
+  if (modal && iframeEl) modal.style.display = 'none';
 }
-
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -351,11 +277,7 @@ if (rightEl && leftEl) {
     leftEl .style.backgroundImage = `url('${sets[i].left}')`;
   }
   applySet(0);
-  const speedSec = parseFloat(
-    getComputedStyle(document.documentElement)
-      .getPropertyValue('--gif-speed')
-      .replace('s','')
-  ) || 12;
+  const speedSec = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gif-speed').replace('s','')) || 12;
   setInterval(() => {
     sweepCount++;
     if (sweepCount >= 2) {
@@ -377,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchNowPlayingArchive();
   loadArchives();
 
-  // Repeat polling
+  // Repeat live & archive polling
   setInterval(fetchLiveNow, 30000);
   setInterval(fetchNowPlayingArchive, 30000);
 
@@ -385,8 +307,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isMobile) {
     document.querySelector('.mixcloud')?.remove();
   } else {
-    document.querySelectorAll('iframe.mixcloud-iframe')
-      .forEach(ifr => { ifr.src = ifr.src || ifr.dataset.src; });
+    document.querySelectorAll('iframe.mixcloud-iframe').forEach(ifr => {
+      ifr.src = ifr.src || ifr.dataset.src;
+    });
     shuffleIframesDaily();
     const s = document.createElement('script');
     s.src = 'https://widget.mixcloud.com/widget.js';
@@ -394,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(s);
   }
 
-  // Pop-out player
+  // Pop-out player button
   document.getElementById('popOutBtn')?.addEventListener('click', () => {
     const src = document.getElementById('inlinePlayer').src;
     const w = window.open('', 'CCRPlayer', 'width=400,height=200,resizable=yes');
@@ -402,10 +325,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       <title>Cutters Choice Player</title>
-      <style>body{margin:0;background:#111;display:flex;
-      align-items:center;justify-content:center;height:100vh;}
-      iframe{width:100%;height:180px;border:none;border-radius:4px;}
-      </style></head><body>
+      <style>
+        body { margin:0; background:#111; display:flex;
+               align-items:center; justify-content:center; height:100vh; }
+        iframe{ width:100%; height:180px; border:none; border-radius:4px; }
+      </style>
+      </head><body>
       <iframe src="${src}" allow="autoplay"></iframe>
       </body></html>
     `);
@@ -416,12 +341,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const ul = document.querySelector('.rc-user-list');
   if (ul) {
     new MutationObserver(() => {
-      Array.from(ul.children)
-        .forEach(li => { if (!li.textContent.trim()) li.remove(); });
+      Array.from(ul.children).forEach(li => {
+        if (!li.textContent.trim()) li.remove();
+      });
     }).observe(ul, { childList: true });
   }
 
-  // Defer ban check
+  // Defer the ban check until idle
   if ('requestIdleCallback' in window) {
     requestIdleCallback(initBanCheck, { timeout: 2000 });
   } else {
